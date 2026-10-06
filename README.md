@@ -29,7 +29,7 @@ notepad .env
 
 Completa las cuatro variables obligatorias y pega la clave generada en `ADDON_ACCESS_KEY`. Después ejecuta `npm start`. No reutilices la contraseña Xtream como clave del addon.
 
-Para comprobar tu proveedor con peticiones reales, ejecuta `npm run smoke`. Valida la autenticación, los tres catálogos, los episodios de la primera serie y los encabezados de un enlace de cada tipo. No descarga videos ni imprime enlaces o credenciales. Un HTTP 200 confirma la respuesta a HEAD; la reproducción completa se comprueba desde Harbor.
+Para comprobar tu proveedor con peticiones reales, ejecuta `npm run smoke`. Valida la autenticación, los tres catálogos, los episodios de la primera serie y los encabezados de un enlace de cada tipo. Para HLS también recorre las listas y verifica una pequeña parte del primer segmento; un HTTP 200 de la lista por sí solo no demuestra que el video se pueda leer. No descarga episodios completos ni imprime enlaces o credenciales. El script inicia un servidor local temporal y lo cierra al terminar. La reproducción completa se comprueba desde Harbor.
 
 ## Subir a Render Free
 
@@ -84,7 +84,11 @@ Los identificadores propios, como `xtream:series:123:1:2`, permiten a Harbor ped
 
 Harbor consulta el manifest y los recursos `catalog`, `meta` y `stream`. El addon consulta `player_api.php`, guarda catálogos y detalles en memoria durante cinco minutos y devuelve JSON. Las peticiones simultáneas al mismo recurso comparten la consulta. La caché es limitada y se reconstruye tras reiniciar el servicio.
 
-El recurso stream conserva `stream_url` o `direct_source` cuando el proveedor los entrega. Si faltan, genera el enlace Xtream estándar con las credenciales codificadas, el identificador y la extensión. Para TV sin enlace explícito utiliza HLS (`m3u8`). Harbor descarga el video directamente del proveedor, así que el tráfico de video no atraviesa Render. Siguen aplicándose los límites de conexiones de la cuenta Xtream.
+El recurso stream utiliza `stream_url` o `direct_source` cuando el proveedor los entrega. Si faltan, genera el enlace Xtream estándar con las credenciales codificadas, el identificador y la extensión. Para TV sin enlace explícito utiliza HLS (`m3u8`). Los archivos MP4 y otros enlaces directos se conservan como tales.
+
+Para HLS, el addon sirve las listas con rutas de reproducción normalizadas: sublistas `.m3u8`, segmentos `.ts` o `.m4s`, inicialización `.mp4` y claves de cifrado `.key`. Algunos proveedores usan rutas sin extensión que FFmpeg/libmpv rechaza aunque los segmentos sean válidos; esta conversión corrige ese caso sin cambiar Harbor. Conserva variantes, audio, códecs y rangos de bytes. Los enlaces internos están firmados, vencen tras seis horas y sobreviven a los reinicios de Render. Las listas se guardan en una caché limitada durante 15 segundos.
+
+Los segmentos y claves de cifrado responden con una redirección HTTP 307 al proveedor: el addon no descarga ni retransmite sus bytes. Harbor obtiene el video del proveedor. Render sí recibe las consultas de listas y redirecciones, que cuentan como solicitudes y consumen una pequeña cantidad de tráfico. Siguen aplicándose los límites de conexiones de la cuenta Xtream.
 
 Los endpoints del addon usan una clave aleatoria en la ruta. La página pública y `/health` no exponen la biblioteca ni las credenciales. Los errores no incluyen las URLs autenticadas. El addon no almacena claves en el navegador, no retransmite videos y no ofrece un registro público de cuentas. El enlace instalado y los streams recibidos sí deben ser accesibles para tu reproductor.
 
@@ -95,9 +99,10 @@ Referencias del formato: [protocolo Stremio](https://github.com/Stremio/stremio-
 - **No aparece el addon:** instala la URL que termina en `/manifest.json`, verifica la clave y espera a que Render reactive el servicio.
 - **Los catálogos dan un error del proveedor:** verifica las tres variables Xtream y que la cuenta esté activa. La raíz HTTP del servidor puede devolver 404 aunque `player_api.php` funcione.
 - **Hay fichas pero el video no reproduce:** ejecuta `npm run smoke`, verifica la disponibilidad del enlace y cierra reproducciones simultáneas si superan el límite de tu cuenta.
+- **Series fallaban en la versión 1.0.0:** actualiza a 1.0.1 y espera a que Render termine el despliegue. Reabre la ficha de la serie o reinicia Harbor para obtener el stream actualizado. La URL de instalación y los identificadores de catálogo no cambian.
 - **Cambiaste `ADDON_ACCESS_KEY`:** elimina el addon antiguo en Harbor y vuelve a instalarlo con el nuevo enlace. Cambiar la clave revoca los enlaces anteriores del addon, pero no los enlaces de video que ya haya recibido un cliente; para revocarlos debes cambiar las credenciales Xtream.
 - **Faltan cambios recientes del catálogo:** la caché se actualiza en cinco minutos o al reiniciar el servicio.
 
 ## Validación del proyecto
 
-`npm run check` comprueba la sintaxis de todo el JavaScript. `npm test` verifica el protocolo HTTP contra un servidor de prueba, autenticación, búsqueda con caracteres especiales, paginación, mapeo de episodios, selección de enlaces, caché y ausencia de credenciales en páginas públicas. Las pruebas automáticas no usan la cuenta real ni necesitan conexión a Internet.
+`npm run check` comprueba la sintaxis de todo el JavaScript. `npm test` verifica el protocolo HTTP contra servidores de prueba, autenticación, búsqueda con caracteres especiales, paginación, mapeo de episodios, selección de enlaces, caché y ausencia de credenciales en páginas públicas. Incluye listas HLS de variantes, audio, I-frames, cifrado, MPEG-TS y MP4 fragmentado, así como firma, vencimiento y redirecciones sin descarga de medios. Las pruebas automáticas no usan la cuenta real ni necesitan conexión a Internet.

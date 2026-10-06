@@ -1,5 +1,6 @@
 import { Xtream, mediaUrl } from './xtream.mjs';
 import { Tmdb } from './tmdb.mjs';
+import { Hls } from './hls.mjs';
 
 const catalogs = [
   { type: 'movie', id: 'xtream-movies', name: 'Peliculas' },
@@ -22,11 +23,12 @@ export class Addon {
     this.config = config;
     this.xtream = xtream;
     this.tmdb = tmdb;
+    this.hls = new Hls(config);
   }
 
   manifest() {
     return {
-      id: 'org.harbor.xtream.personal', version: '1.0.0', name: this.config.name,
+      id: 'org.harbor.xtream.personal', version: '1.0.1', name: this.config.name,
       description: 'Tus peliculas, series y canales de Xtream. Addon personal.',
       logo: `${this.config.origin}/poster.svg`,
       resources: ['catalog', 'meta', 'stream'].map(name => ({ name, types: ['movie', 'series', 'tv'],
@@ -133,9 +135,14 @@ export class Addon {
         && Number(episode.episode_num) === parsed.episode);
       if (!source) return { streams: [] };
     }
-    const url = this.xtream.streamUrl(type, source);
-    if (!url) return { streams: [] };
-    return { streams: [{ name: this.config.name, title: String(source.title || row.name || 'Reproducir'), url,
+    const providerUrl = this.xtream.streamUrl(type, source);
+    if (!providerUrl) return { streams: [] };
+    const isHls = /\.m3u8(?:[?#]|$)/i.test(providerUrl) || source.container_extension === 'm3u8';
+    const url = isHls ? this.hls.link(providerUrl) : providerUrl;
+    const title = type === 'series'
+      ? `${row.name} S${String(parsed.season).padStart(2, '0')}E${String(parsed.episode).padStart(2, '0')} · ${source.title || 'Episodio'}`
+      : String(source.title || row.name || 'Reproducir');
+    return { streams: [{ name: this.config.name, title, url,
       behaviorHints: { notWebReady: !/\.(m3u8|mp4)(?:[?#]|$)/i.test(url),
         ...(type === 'series' ? { bingeGroup: `xtream:${parsed.id}` } : {}) } }] };
   }

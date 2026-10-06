@@ -68,10 +68,14 @@ test('movie metadata comes from the listing even without get_vod_info', async ()
   assert.equal(meta.imdbRating, '7.3');
 });
 
-test('provider stream URLs are preserved for movies and TV', async () => {
+test('HLS streams keep the provider source inside authenticated playlist links', async () => {
   const addon = fixture();
-  assert.equal((await addon.stream('movie', 'xtream:movie:8')).streams[0].url, movie.stream_url);
-  assert.equal((await addon.stream('tv', 'xtream:tv:9')).streams[0].url, tv.stream_url);
+  const source = async (type, id) => {
+    const { streams } = await addon.stream(type, id);
+    return addon.hls.decode(new URL(streams[0].url).pathname.split('/').at(-1)).url;
+  };
+  assert.equal(await source('movie', 'xtream:movie:8'), movie.stream_url);
+  assert.equal(await source('tv', 'xtream:tv:9'), tv.stream_url);
   assert.equal((await addon.meta('tv', 'xtream:tv:9')).meta.behaviorHints.defaultVideoId, 'xtream:tv:9');
 });
 
@@ -91,7 +95,8 @@ test('series include specials, sorted canonical episode IDs, and playable episod
   assert.equal(meta.videos[1].released, '2024-01-01T00:00:00.000Z');
   assert.deepEqual(meta.cast, ['Uno', 'Dos']);
   const { streams } = await addon.stream('series', meta.videos[2].id);
-  assert.ok(streams[0].url.endsWith('/111.m3u8'));
+  assert.ok(addon.hls.decode(new URL(streams[0].url).pathname.split('/').at(-1)).url.endsWith('/111.m3u8'));
+  assert.equal(streams[0].title, 'Una serie S01E02 · Segundo');
   assert.equal(streams[0].behaviorHints.bingeGroup, 'xtream:3');
   assert.equal((await addon.stream('series', 'xtream:series:3:1:999')).streams.length, 0);
   assert.equal((await addon.stream('series', 'xtream:series:3')).streams.length, 0);
@@ -171,7 +176,7 @@ test('HTTP protocol authenticates every resource and supports encoded search and
   const search = await fetch(`${base}/catalog/movie/xtream-movies/search=${encodeURIComponent('Niños & Acción')}&skip=0.json`).then(res => res.json());
   assert.equal(search.metas.length, 1);
   const stream = await fetch(`${base}/stream/series/${encodeURIComponent('xtream:series:3:1:2')}.json`).then(res => res.json());
-  assert.ok(stream.streams[0].url.endsWith('/111.m3u8'));
+  assert.ok(addon.hls.decode(new URL(stream.streams[0].url).pathname.split('/').at(-1)).url.endsWith('/111.m3u8'));
   assert.equal((await fetch(`${base}/manifest.json`, { method: 'HEAD' })).status, 200);
   assert.equal((await fetch(`${base}/meta/movie/%zz.json`)).status, 400);
 });

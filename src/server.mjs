@@ -61,6 +61,16 @@ export function createServer(config, addon = new Addon(config)) {
       catch { return send(res, 400, { error: 'Ruta no valida.' }, req.method); }
       if (!authorized(parts[0])) return send(res, 404, { error: 'Ruta no encontrada.' }, req.method);
       if (parts.length === 2 && parts[1] === 'manifest.json') return send(res, 200, addon.manifest(), req.method);
+      if (parts.length === 3 && parts[1] === 'hls') {
+        const target = addon.hls.decode(parts[2]);
+        if (!target) return send(res, 404, { error: 'Enlace HLS no valido o vencido.' }, req.method);
+        if (target.extension !== 'm3u8') {
+          // The addon handles playlists and redirects only; media bytes stay at the provider.
+          res.writeHead(307, { Location: target.url });
+          return res.end();
+        }
+        return send(res, 200, await addon.hls.playlist(target.url), req.method, 'application/vnd.apple.mpegurl; charset=utf-8');
+      }
       const [resource, type] = parts.slice(1, 3);
       if (!['catalog', 'meta', 'stream'].includes(resource) || !['movie', 'series', 'tv'].includes(type)
         || ![4, 5].includes(parts.length) || (parts.length === 5 && resource !== 'catalog')
