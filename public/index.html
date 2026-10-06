@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Ruka · Tu biblioteca en Harbor</title>
+  <link rel="icon" href="/poster.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="/">ruka<span aria-hidden="true"> ↗</span></a><span>XTREAM / HARBOR</span></header>
+  <main>
+    <section class="intro" aria-labelledby="title">
+      <p class="eyebrow">TU BIBLIOTECA, CONECTADA</p>
+      <h1 id="title">Todo lo que<br>quieres <em>ver.</em></h1>
+      <p class="lead">Películas, series y televisión en vivo.<br>Tu servidor Xtream, dentro de Harbor.</p>
+      <div class="catalogs" aria-label="Catálogos incluidos"><span>01 / Películas</span><span>02 / Series</span><span>03 / TV en vivo</span></div>
+      <p class="note">Los canales aparecen en el catálogo del addon. La guía EPG depende del proveedor.</p>
+    </section>
+    <section class="installation" aria-labelledby="install-title">
+      <span class="step">CONEXIÓN PERSONAL</span>
+      <h2 id="install-title">Añade tu biblioteca.</h2>
+      <p>Introduce la clave de instalación configurada en el addon para obtener tu enlace privado.</p>
+      <form id="install-form">
+        <label for="access-key">Clave de instalación</label>
+        <input id="access-key" name="accessKey" type="password" autocomplete="off" minlength="32" maxlength="128" placeholder="Tu clave privada" required>
+        <button id="submit" type="submit">Obtener enlace <span aria-hidden="true">↗</span></button>
+      </form>
+      <p id="status" role="status" aria-live="polite"></p>
+      <div id="result" hidden>
+        <label for="manifest-url">URL del addon</label>
+        <input id="manifest-url" readonly aria-describedby="instructions">
+        <button id="copy" type="button" class="secondary">Copiar enlace</button>
+        <p id="instructions">En Harbor abre <strong>Addons</strong>, elige añadir por URL y pega este enlace.</p>
+        <a id="stremio-link" class="text-link">Abrir en Stremio ↗</a>
+        <p class="privacy">Guarda este enlace como una contraseña: permite acceder a tu biblioteca y a sus streams.</p>
+      </div>
+      <p class="render-note">¿Lo alojas en Render Free? Abre esta página y espera a que cargue antes de usar Harbor si el servicio estaba dormido.</p>
+    </section>
+  </main>
+  <footer><span>DE TU SERVIDOR A TU PANTALLA.</span><span>Addon personal · Protocolo Stremio</span></footer>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "xtream-harbor-addon",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Addon personal de Xtream compatible con Harbor y el protocolo Stremio",
+  "engines": { "node": ">=22.14 <26" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.mjs",
+    "dev": "node --watch --env-file-if-exists=.env src/server.mjs",
+    "test": "node --test",
+    "check": "node scripts/check.mjs",
+    "key": "node -e \"console.log(require('node:crypto').randomBytes(32).toString('hex'))\"",
+    "smoke": "node --env-file-if-exists=.env scripts/smoke.mjs",
+    "install-link": "node --env-file-if-exists=.env scripts/install-link.mjs"
+  }
+}

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: xtream-harbor-addon
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run check && npm test
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: XTREAM_SERVER
+        sync: false
+      - key: XTREAM_USERNAME
+        sync: false
+      - key: XTREAM_PASSWORD
+        sync: false
+      - key: ADDON_ACCESS_KEY
+        sync: false
+      - key: ADDON_NAME
+        value: Ruka Xtream
