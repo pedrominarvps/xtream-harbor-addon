@@ -25,6 +25,11 @@ try {
     if (catalog.type === 'series') console.log(`Episodios de la primera serie: ${meta.videos.length}.`);
     const { streams } = await addon.stream(catalog.type, videoId);
     assert.equal(streams.length, 1);
+    if (catalog.type === 'series') {
+      assert.equal(meta.videos[0].streams?.length, 1, 'El episodio no contiene su fuente de reproduccion.');
+      assert.equal(meta.videos[0].streams[0].title, streams[0].title);
+      console.log('Fuente incluida en los datos del episodio: correcta.');
+    }
     // Header check for direct files; HLS also verifies a small prefix of a real segment.
     try {
       const response = await fetch(streams[0].url, { method: 'HEAD', signal: AbortSignal.timeout(10_000) });

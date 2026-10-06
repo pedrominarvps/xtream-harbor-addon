@@ -1,6 +1,6 @@
 {
   "name": "xtream-harbor-addon",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "Addon personal de Xtream compatible con Harbor y el protocolo Stremio",

@@ -54,7 +54,7 @@ export function createServer(config, addon = new Addon(config)) {
         const [file, type] = assets[url.pathname];
         return send(res, 200, await readFile(new URL(`../public/${file}`, import.meta.url)), req.method, type);
       }
-      if (url.pathname === '/health') return send(res, 200, { status: 'ok' }, req.method);
+      if (url.pathname === '/health') return send(res, 200, { status: 'ok', version: addon.manifest().version }, req.method);
       if (url.pathname === '/robots.txt') return send(res, 200, 'User-agent: *\nDisallow: /\n', req.method, 'text/plain');
       let parts;
       try { parts = url.pathname.slice(1).split('/').map(decodeURIComponent); }

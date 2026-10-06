@@ -28,7 +28,7 @@ export class Addon {
 
   manifest() {
     return {
-      id: 'org.harbor.xtream.personal', version: '1.0.1', name: this.config.name,
+      id: 'org.harbor.xtream.personal', version: '1.0.2', name: this.config.name,
       description: 'Tus peliculas, series y canales de Xtream. Addon personal.',
       logo: `${this.config.origin}/poster.svg`,
       resources: ['catalog', 'meta', 'stream'].map(name => ({ name, types: ['movie', 'series', 'tv'],
@@ -92,6 +92,10 @@ export class Addon {
           id: `${id}:${episode.season}:${episode.episode_num}`,
           title: String(episode.title || `Episodio ${episode.episode_num}`),
           season: Number(episode.season), episode: Number(episode.episode_num),
+          // Harbor consumes episode sources here without another addon discovery request.
+          streams: this.sources('series', row, episode, {
+            id: parsed.id, season: Number(episode.season), episode: Number(episode.episode_num),
+          }),
           // The protocol requires a date; epoch means unknown, never a fabricated airing date.
           released: released(episode.info?.air_date || episode.added) || '1970-01-01T00:00:00.000Z',
           overview: String(episode.info?.plot || ''), thumbnail: mediaUrl(episode.info?.movie_image),
@@ -135,15 +139,19 @@ export class Addon {
         && Number(episode.episode_num) === parsed.episode);
       if (!source) return { streams: [] };
     }
+    return { streams: this.sources(type, row, source, parsed) };
+  }
+
+  sources(type, row, source, parsed) {
     const providerUrl = this.xtream.streamUrl(type, source);
-    if (!providerUrl) return { streams: [] };
+    if (!providerUrl) return [];
     const isHls = /\.m3u8(?:[?#]|$)/i.test(providerUrl) || source.container_extension === 'm3u8';
     const url = isHls ? this.hls.link(providerUrl) : providerUrl;
     const title = type === 'series'
       ? `${row.name} S${String(parsed.season).padStart(2, '0')}E${String(parsed.episode).padStart(2, '0')} · ${source.title || 'Episodio'}`
       : String(source.title || row.name || 'Reproducir');
-    return { streams: [{ name: this.config.name, title, url,
+    return [{ name: this.config.name, title, url,
       behaviorHints: { notWebReady: !/\.(m3u8|mp4)(?:[?#]|$)/i.test(url),
-        ...(type === 'series' ? { bingeGroup: `xtream:${parsed.id}` } : {}) } }] };
+        ...(type === 'series' ? { bingeGroup: `xtream:${parsed.id}` } : {}) } }];
   }
 }

@@ -80,6 +80,8 @@ Los canales se muestran como un catálogo del addon. No se agregan automáticame
 
 Los identificadores propios, como `xtream:series:123:1:2`, permiten a Harbor pedir exactamente el episodio de tu cuenta. Cuando Xtream no proporciona fecha del episodio se usa `1970-01-01` como fecha desconocida para cumplir el campo requerido por el protocolo; no es su fecha de emisión.
 
+Desde la versión 1.0.2, cada episodio también incluye su fuente en `meta.videos[].streams`. Harbor puede usarla directamente al seleccionar el capítulo, sin una segunda consulta de descubrimiento de addons. El recurso `stream` sigue disponible para los clientes que lo solicitan. Ambos formatos utilizan el mismo enlace y el mismo mapeo de temporada y episodio; no se necesita debrid para estas fuentes HTTP.
+
 ## Cómo funciona
 
 Harbor consulta el manifest y los recursos `catalog`, `meta` y `stream`. El addon consulta `player_api.php`, guarda catálogos y detalles en memoria durante cinco minutos y devuelve JSON. Las peticiones simultáneas al mismo recurso comparten la consulta. La caché es limitada y se reconstruye tras reiniciar el servicio.
@@ -99,7 +101,7 @@ Referencias del formato: [protocolo Stremio](https://github.com/Stremio/stremio-
 - **No aparece el addon:** instala la URL que termina en `/manifest.json`, verifica la clave y espera a que Render reactive el servicio.
 - **Los catálogos dan un error del proveedor:** verifica las tres variables Xtream y que la cuenta esté activa. La raíz HTTP del servidor puede devolver 404 aunque `player_api.php` funcione.
 - **Hay fichas pero el video no reproduce:** ejecuta `npm run smoke`, verifica la disponibilidad del enlace y cierra reproducciones simultáneas si superan el límite de tu cuenta.
-- **Series fallaban en la versión 1.0.0:** actualiza a 1.0.1 y espera a que Render termine el despliegue. Reabre la ficha de la serie o reinicia Harbor para obtener el stream actualizado. La URL de instalación y los identificadores de catálogo no cambian.
+- **Series muestran cero fuentes:** actualiza a 1.0.2 y espera a que Render termine el despliegue. Abre `/health` en la dirección pública del addon y confirma `"version":"1.0.2"`. Cierra Harbor por completo y vuelve a abrir la ficha de la serie desde el catálogo Ruka Xtream para cargar los episodios con sus fuentes incluidas. La URL de instalación y los identificadores de catálogo no cambian. El mensaje genérico sobre debrid no significa que Xtream lo necesite.
 - **Cambiaste `ADDON_ACCESS_KEY`:** elimina el addon antiguo en Harbor y vuelve a instalarlo con el nuevo enlace. Cambiar la clave revoca los enlaces anteriores del addon, pero no los enlaces de video que ya haya recibido un cliente; para revocarlos debes cambiar las credenciales Xtream.
 - **Faltan cambios recientes del catálogo:** la caché se actualiza en cinco minutos o al reiniciar el servicio.
 

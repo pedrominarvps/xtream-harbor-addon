@@ -111,6 +111,31 @@ test('unknown and mismatched IDs never trigger provider requests', async () => {
   assert.deepEqual(await addon.catalog('movie', 'other'), { metas: [] });
 });
 
+test('series metadata supplies the exact episode source without a second discovery request', async context => {
+  const addon = fixture();
+  const origin = await listen(createServer(addon.config, addon), context);
+  addon.config.origin = origin;
+  const response = await fetch(`${origin}/${key}/meta/series/xtream:series:3.json`);
+  assert.equal(response.status, 200);
+  const { meta } = await response.json();
+  assert.equal(meta.videos.length, 3);
+  for (const video of meta.videos) {
+    assert.equal(video.streams.length, 1);
+    const embedded = video.streams[0];
+    const endpoint = (await addon.stream('series', video.id)).streams[0];
+    assert.equal(embedded.title, endpoint.title);
+    assert.deepEqual(embedded.behaviorHints, endpoint.behaviorHints);
+    const sourceUrl = stream => stream.url.endsWith('.m3u8')
+      ? addon.hls.decode(new URL(stream.url).pathname.split('/').at(-1)).url : stream.url;
+    assert.equal(sourceUrl(embedded), sourceUrl(endpoint));
+    assert.equal(embedded.name, addon.config.name);
+  }
+  addon.xtream.seriesInfo = async () => ({ episodes: { 1: [
+    { season: 1, episode_num: 1, id: '../invalid', title: 'Unavailable' },
+  ] } });
+  assert.deepEqual((await addon.meta('series', 'xtream:series:3')).meta.videos[0].streams, []);
+});
+
 test('optional TMDB enriches metadata without changing episode or catalog IDs', async () => {
   const addon = fixture();
   addon.tmdb = { details: async () => ({ overview: 'TMDB', poster_path: '/poster.jpg',
@@ -166,6 +191,7 @@ test('HTTP protocol authenticates every resource and supports encoded search and
   const origin = await listen(createServer(localConfig, addon), context);
   localConfig.origin = origin;
   const base = `${origin}/${key}`;
+  assert.deepEqual(await fetch(`${origin}/health`).then(res => res.json()), { status: 'ok', version: '1.0.2' });
   for (const path of ['/manifest.json', '/wrong/manifest.json', '/wrong/catalog/movie/xtream-movies.json', '/wrong/meta/movie/xtream%3Amovie%3A8.json']) {
     assert.equal((await fetch(origin + path)).status, 404);
   }
